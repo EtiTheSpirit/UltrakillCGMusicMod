@@ -87,8 +87,7 @@ A: If you found an issue or bug, my contact info is on my website @ https://etit
 		/// </summary>
 		/// <param name="buildIndex"></param>
 		/// <returns></returns>
-		public MusicChanger GetMusicChanger(int buildIndex) {
-			Scene scene = SceneManager.GetSceneByBuildIndex(buildIndex);
+		public MusicChanger GetMusicChanger(in Scene scene) {
 			// Try the known path.
 			GameObject everything = scene.GetRootGameObjects().FirstOrDefault(obj => obj.name == "Everything");
 			if (everything != null) {
@@ -120,6 +119,7 @@ A: If you found an issue or bug, my contact info is on my website @ https://etit
 			if (options.Length == 0) {
 				// This is still possible! Default doesn't have to exist, and if it doesn't, then this may very well be zero.
 				// In this case, just do nothing.
+				MelonLogger.Msg("Loaded nothing; there are no songs available.");
 				return;
 			}
 
@@ -142,12 +142,14 @@ A: If you found an issue or bug, my contact info is on my website @ https://etit
 
 		/// <inheritdoc/>
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName) {
-			if (buildIndex == 2) {
+			MelonLogger.Msg($"A scene was loaded. (Scene #{buildIndex}: {sceneName})");
+			if (sceneName == "Endless") {
+				MelonLogger.Msg("...which is the Cybergrind level. Loading music up!");
+				Scene scene = SceneManager.GetSceneByName(sceneName);
 				// name will be "Endless" in this case.
-				MusicChanger changer = GetMusicChanger(buildIndex);
+				MusicChanger changer = GetMusicChanger(scene);
 
 				if (changer != null) {
-					Scene scene = SceneManager.GetSceneByBuildIndex(buildIndex);
 					AudioSource introSrc = changer.transform.parent.GetComponent<AudioSource>();
 					if (introSrc == null) {
 						MelonLogger.Warning("Failed to find an instance of AudioSource on Intro - intro tracks won't work!");
@@ -157,14 +159,14 @@ A: If you found an issue or bug, my contact info is on my website @ https://etit
 					AudioSource outroSrc = endCtr.GetComponent<AudioSource>();
 
 					if (outroSrc == null) {
-						MelonLogger.Error("Failed to find an instance of AudioSource on EndMusic! This is REQUIRED to figure out when to switch tracks, so the mod will not work!");
+						MelonLogger.Error("Failed to find an instance of AudioSource on EndMusic! This is REQUIRED to figure out when to switch to a new track, so the mod will not work at all!");
 						return;
 					}
 
 					// Late-populate the defaults.
 					if (!AudioFolderRepresentation.HasDefaults) {
 						AudioFolderRepresentation.HasDefaults = true;
-						MelonLogger.Msg("Loading defaults into the audio tracker...");
+						MelonLogger.Msg("Loading defaults into the audio tracker's memory...");
 						AudioFolderRepresentation.DefaultIntro = introSrc?.clip;
 						AudioFolderRepresentation.DefaultLoop = changer.battle ?? changer.boss ?? changer.clean; 
 						// No clue which is which and they always get set to the same thing it seems.
